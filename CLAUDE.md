@@ -1,32 +1,60 @@
 # CLAUDE.md
 
-This file guides Claude Code (claude.ai/code) when working in this repository.
+This file guides Claude Code (claude.ai/code) when working in this repository. See also [AGENTS.md](AGENTS.md) (Expo's own agent guidance: always check versioned Expo docs, use `npx expo install` for packages).
 
-## Project status
+## What TribeMama is
 
-**TribeMama** is a new mobile app project. As of 2026-11-01 the repository is empty: no code, no framework and no git history yet. Update this file as decisions are made and code is added.
+A community app for motherhood: "Motherhood takes a village. Here's yours." It serves new moms, women considering motherhood, and motherhood service providers.
 
-## What we know so far
+Planned features:
+- **Community boards** by life stage (considering motherhood → life with a newborn).
+- **Book trusted help**, searchable by zip code: babysitters/nannies, doulas, nutritionists, meal prep, physical trainers, therapists/coaches. All providers are verified.
+- **One profile**: sign up once as a consumer or a service provider, with basic info, address and interests.
+- Business model: first 2 bookings free, then a small fee per booking.
+- **Not in MVP:** a shop for baby and mom products.
 
-- Target: a phone app that runs on multiple platforms (iOS and Android).
-- Development machine: Windows 11, PowerShell. Note that iOS builds need macOS or a cloud build service (e.g. Expo EAS), since Xcode doesn't run on Windows.
-- The folder lives inside OneDrive. Keep `node_modules`, build output and other large generated folders out of sync (or move the project out of OneDrive) to avoid slow syncs and file-lock errors.
+Design goals: simple, easy and fast ("for mom brains"). The MVP is the phone app only.
 
-## Decisions still open
+## Stack
 
-Fill these in once chosen:
-
-- **Framework:** _TBD_ (common cross-platform choices: React Native with Expo, Flutter)
-- **Language:** _TBD_
-- **Backend / data / auth:** _TBD_
-- **State management & navigation:** _TBD_
-- **Testing:** _TBD_
-- **Version control:** not yet a git repo. Run `git init` before the first real code.
+- **Expo SDK 58** (React Native 0.88, React 19.3), **JavaScript**.
+- **Expo Router** for navigation. Routes live in `src/app/`, and every file there is a screen.
+- **Supabase** for auth (and later data). The client lives in `src/lib/supabase.js` and stores sessions in AsyncStorage. Config comes from `EXPO_PUBLIC_SUPABASE_URL` / `EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY` in `.env.local` (gitignored; template in `.env.example`). Only use the publishable key in the app, never a secret/service-role key.
+- Sign-up calls `supabase.auth.signUp`, storing the full name in user metadata as `full_name`. Email confirmation is on in the Supabase project, so sign-up returns no session until the user confirms by email.
 
 ## Commands
 
-_None yet._ Once the project is scaffolded, list here how to install dependencies, run on a device or emulator, run tests (including a single test), lint, and build for release.
+```bash
+npm install                 # install dependencies
+npx expo start              # dev server; scan the QR code with Expo Go on a phone
+npx expo install <package>  # add a package (picks SDK-compatible versions; never use plain npm install <pkg>)
+npx expo-doctor             # check dependency/config problems
+```
+
+There is no test or lint setup yet.
 
 ## Architecture
 
-_None yet._ Once code exists, describe the top-level folder layout, how screens and navigation are organized, where API/data access lives, and any conventions that aren't obvious from reading a single file.
+```
+src/
+  app/            # Expo Router routes (screens only)
+    _layout.js    # root Stack navigator + shared header styling
+    index.js      # landing page (welcome, intro, "Get Started")
+    sign-up.js    # sign-up form (full name, email, password)
+  components/     # reusable UI (PrimaryButton, TextField)
+  lib/supabase.js # Supabase client (import { supabase } from here)
+  theme/colors.js # color palette + spacing scale; use these, don't hardcode colors
+```
+
+Planned screens: login (consumer vs. provider), community boards, and services list filtered by location.
+
+## Design system
+
+The palette in `src/theme/colors.js` comes from Figma's color combinations #2 Mossy Hollow, #9 Golden Taupe and #13 Desert Dusk: cream background `#FDFBD4`, olive primary `#636B2F`, dark moss text `#3D4127`, sage borders `#BAC095`, cognac accent `#A2574F`, dusty rose `#BF7587`. The tagline comes from the flyer; the flyer's visual design is deliberately not used.
+
+## Gotchas
+
+- **Don't keep the project in OneDrive.** OneDrive turns files in `node_modules` into cloud placeholders (reparse points). Metro can't resolve them and fails with `Unable to resolve module ./node_modules/expo-router/entry`. The same code bundles fine outside OneDrive.
+- `react-dom` is pinned to `19.3.0` to match `react`. Expo Router pulls it in as a peer, and npm otherwise picks 19.3.1, which breaks `npm ci`.
+- Dev machine is Windows: iOS builds need EAS (cloud) or a Mac. iOS testing works through Expo Go on a phone.
+- GitHub remote: https://github.com/nafisa-maryam/TribeMama.git (branch `main`).
